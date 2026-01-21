@@ -1,0 +1,57 @@
+{
+  "name": "prabandh402",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "dev": "tsx watch registry/src/index.ts",
+    "dev:provider": "tsx watch provider-stub/src/index.ts",
+    "dev:agent": "tsx watch agent-cli/src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint . --ext .ts",
+    "test": "vitest"
+  },
+  
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Dev4057/Prabandh402.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/Dev4057/Prabandh402/issues"
+  },
+  "homepage": "https://github.com/Dev4057/Prabandh402#readme",
+  "dependencies": {
+    "@fastify/cors": "^11.2.0",
+    "@fastify/helmet": "^13.0.2",
+    "@fastify/rate-limit": "^10.3.0",
+    "@noble/secp256k1": "^3.0.0",
+    "dotenv": "^17.2.3",
+    "drizzle-orm": "^0.45.1",
+    "fastify": "^5.7.1",
+    "pino": "^10.2.1",
+    "postgres": "^3.4.8",
+    "viem": "^2.44.4",
+    "zod": "^4.3.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@types/node": "^25.0.9",
+    "@types/pg": "^8.16.0",
+    "@types/pino": "^7.0.4",
+    "eslint": "^9.39.2",
+    "eslint-plugin-react": "^7.37.5",
+    "globals": "^17.0.0",
+    "prettier": "^3.8.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.53.1",
+    "vitest": "^4.0.17"
+  }
+}
