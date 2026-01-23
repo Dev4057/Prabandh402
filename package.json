@@ -10,11 +10,13 @@
     "dev": "tsx watch registry/src/index.ts",
     "dev:provider": "tsx watch provider-stub/src/index.ts",
     "dev:agent": "tsx watch agent-cli/src/index.ts",
+    "dev:registry": "tsx registry/src/server.ts",
+    "dev:provider:run": "tsx provider-stub/src/server.ts",
+    "agent:demo": "tsx agent-cli/src/demo.ts",
     "build": "tsc -p tsconfig.json",
     "lint": "eslint . --ext .ts",
     "test": "vitest"
   },
-  
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Dev4057/Prabandh402.git"
@@ -35,6 +37,7 @@
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.45.1",
     "fastify": "^5.7.1",
+    "pg": "^8.17.2",
     "pino": "^10.2.1",
     "postgres": "^3.4.8",
     "viem": "^2.44.4",

@@ -4,7 +4,7 @@
 // Verifies the 402 signature with the SID public key.
 // Mocks payment (produces a fake tx hash) and calls the provider callback.
 // Verifies the provider’s signed receipt.
-// Real-world role: Minimal agent harness demonstrating discovery → trust verification → payment ask → “payment” → receipt verification. In Phase 2, swap mock payment with real ERC-20 transfer + facilitator verify/settle.
+// Real-world role: Minimal agent  discovharness demonstratingery → trust verification → payment ask → “payment” → receipt verification. In Phase 2, swap mock payment with real ERC-20 transfer + facilitator verify/settle.
 
 
 import fetch from "node-fetch";

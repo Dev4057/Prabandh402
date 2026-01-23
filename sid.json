@@ -1,0 +1,15 @@
+{
+  "sid": {
+    "service_id": "acme-freight",
+    "hosts": ["http://localhost:4001"],
+    "capabilities": ["book_pickup_slot"],
+    "payment": {
+      "network": "sepolia",
+      "token": "0x0000000000000000000000000000000000000000",
+      "address": "0x1111111111111111111111111111111111111111"
+    },
+    "verification": { "public_key": "0x026e1ae39ce49fb7c23152fd48e8d4e7acfb7c1832743c867321145f4fd888429d" },
+    "expiry": "2026-12-31T23:59:59Z",
+    "nonce": "v1"
+  }
+}

@@ -12,7 +12,8 @@ export async function buildServer() {
   return app;
 }
 
-if (require.main === module) {
+// ESM-friendly entrypoint check
+if (import.meta.main) {
   (async () => {
     const app = await buildServer();
     const port = Number(process.env.PROVIDER_PORT || 4001);
