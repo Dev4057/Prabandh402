@@ -4,19 +4,21 @@
 // Verifies the 402 signature with the SID public key.
 // Mocks payment (produces a fake tx hash) and calls the provider callback.
 // Verifies the provider’s signed receipt.
-// Real-world role: Minimal agent  discovharness demonstratingery → trust verification → payment ask → “payment” → receipt verification. In Phase 2, swap mock payment with real ERC-20 transfer + facilitator verify/settle.
+// Real-world role: Minimal agent discovery → trust verification → payment ask → “payment” → receipt verification.
 
-
-import fetch from "node-fetch";
 import { verifyPayload } from "../../provider-stub/src/crypto";
 import { Sid } from "../../registry/src/sid";
+
+type SidRow = { payload: Sid };
 
 async function main() {
   const registryUrl = process.env.AGENT_REGISTRY_URL || "http://localhost:4000";
   const providerUrl = process.env.AGENT_PROVIDER_URL || "http://localhost:4001";
 
   console.log("1) Fetch SID from registry");
-  const sidRow = await fetch(`${registryUrl}/search`).then((r) => r.json()).then((rows) => rows[0]);
+  const sidRow = await fetch(`${registryUrl}/search`)
+    .then((r) => r.json())
+    .then((rows: SidRow[]) => rows[0]);
   if (!sidRow) throw new Error("No SID in registry; submit one first.");
   const sid: Sid = sidRow.payload;
   console.log("   service_id:", sid.service_id);
