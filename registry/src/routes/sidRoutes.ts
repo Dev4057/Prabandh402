@@ -21,17 +21,14 @@ export async function sidRoutes(app: FastifyInstance) {
       expectedPayment: parsed.payment.address,
     });
 
-    const sigStr = String(sigOk);
-    const dnsStr = String(dns.ok);
-
     await app.db
       .insert(sids)
       .values({
         service_id: parsed.service_id,
         payload: parsed,
         signature,
-        sig_valid: sigStr,
-        dns_ok: dnsStr,
+        sig_valid: String(sigOk),
+        dns_ok: String(dns.ok),
         anchor_ok: "unknown",
       })
       .onConflictDoUpdate({
@@ -39,8 +36,8 @@ export async function sidRoutes(app: FastifyInstance) {
         set: {
           payload: parsed,
           signature,
-          sig_valid: sigStr,
-          dns_ok: dnsStr,
+          sig_valid: String(sigOk),
+          dns_ok: String(dns.ok),
           anchor_ok: "unknown",
         },
       });
