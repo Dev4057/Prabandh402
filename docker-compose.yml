@@ -10,10 +10,17 @@ services:
       - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   registry:
     build: ./registry
-    depends_on: [db]
+    depends_on:
+      db:
+        condition: service_healthy
     env_file: .env
     ports:
       - "${REGISTRY_PORT:-4000}:4000"
