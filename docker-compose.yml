@@ -5,7 +5,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: prabandh402
+      POSTGRES_DB: registry
     ports:
       - "5432:5432"
     volumes:
@@ -17,6 +17,8 @@ services:
     env_file: .env
     ports:
       - "${REGISTRY_PORT:-4000}:4000"
+    environment:
+      REGISTRY_DB_URL: postgres://postgres:postgres@db:5432/registry
 
   provider-stub:
     build: ./provider-stub
@@ -29,12 +31,6 @@ services:
     env_file: .env
     ports:
       - "${AGENT_PORT:-4002}:4002"
-
-  facilitator:
-    build: ./facilitator
-    env_file: .env
-    ports:
-      - "${FACILITATOR_PORT:-4101}:4101"
 
 volumes:
   db_data:
