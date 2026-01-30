@@ -1,1 +1,47 @@
-version: '3.8'\nservices:\n  web:\n    image: my-web-app\n    depends_on:\n      db:\n        condition: service_healthy\n  db:\n    image: my-db-image\n    healthcheck:\n      test: [ 'CMD', 'pg_isready', '-U', 'myuser' ]\n      interval: 5s\n      timeout: 3s\n      retries: 5\n
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: prabandh402
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  registry:
+    build: ./registry
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env
+    ports:
+      - "${REGISTRY_PORT:-4000}:4000"
+
+  provider-stub:
+    build: ./provider-stub
+    env_file: .env
+    ports:
+      - "${PROVIDER_PORT:-4001}:4001"
+
+  agent-cli:
+    build: ./agent-cli
+    env_file: .env
+    ports:
+      - "${AGENT_PORT:-4002}:4002"
+
+  facilitator:
+    build: ./facilitator
+    env_file: .env
+    ports:
+      - "${FACILITATOR_PORT:-4101}:4101"
+
+volumes:
+  db_data:
