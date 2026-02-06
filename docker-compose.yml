@@ -1,7 +1,7 @@
+version: '3.8'
 services:
-  db:
-    image: postgres:16
-    restart: unless-stopped
+  database:
+    image: postgres:15
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -9,7 +9,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - db_data:/var/lib/postgresql/data
+      - pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
@@ -17,27 +17,24 @@ services:
       retries: 5
 
   registry:
-    build: ./registry
-    depends_on:
-      db:
-        condition: service_healthy
-    env_file: .env
+    build: .
+    command: npm run dev:registry
     ports:
-      - "${REGISTRY_PORT:-4000}:4000"
+      - "4000:4000"
     environment:
-      REGISTRY_DB_URL: postgres://postgres:postgres@db:5432/registry
+      - REGISTRY_PORT=4000
+      - REGISTRY_DB_URL=postgres://postgres:postgres@database:5432/registry
+    depends_on:
+      database:
+        condition: service_healthy
 
-  provider-stub:
-    build: ./provider-stub
-    env_file: .env
+  provider:
+    build: .
+    command: npm run dev:provider:run
     ports:
-      - "${PROVIDER_PORT:-4001}:4001"
-
-  agent-cli:
-    build: ./agent-cli
-    env_file: .env
-    ports:
-      - "${AGENT_PORT:-4002}:4002"
+      - "4001:4001"
+    env_file:
+      - .env
 
 volumes:
-  db_data:
+  pgdata:

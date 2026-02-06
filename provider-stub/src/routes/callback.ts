@@ -1,7 +1,7 @@
 // What it does: /payment/confirm endpoint that accepts a tx hash + booking context, mocks a payment check, and returns a signed receipt.
 // Real-world role: Provider-side confirmation webhook: after seeing payment, it issues a signed receipt the agent can trust. In Phase 1 the payment check is mocked; later it should verify on-chain.
 import { FastifyInstance } from "fastify";
-import { signPayload } from "../crypto";
+import { signPayload } from "../crypto.js";
 
 interface CallbackBody {
   tx_hash: string;

@@ -1,14 +1,15 @@
 // What it does: Signs and verifies provider payloads with secp256k1.
 // Real-world role: Provider proves authenticity of 402 requests and receipts.
 
-import { secp256k1 } from "@noble/curves/secp256k1";
-import { sha256 } from "@noble/hashes/sha256";
+import { secp256k1 } from "@noble/curves/secp256k1.js";
+import { sha256 } from "@noble/hashes/sha2.js";
+import { stableStringify } from "../../registry/src/utils/stableStringify.js";
 
 export async function signPayload(payload: any, privKeyHex: string): Promise<string> {
-  const msg = JSON.stringify(payload);
+  const msg = stableStringify(payload);  // ✅ Deterministic
   const digest = sha256(new TextEncoder().encode(msg));
   const privBytes = hexToBytes(privKeyHex.replace(/^0x/, ""));
-  const sig = secp256k1.sign(digest, privBytes).toCompactRawBytes();
+  const sig = secp256k1.sign(digest, privBytes);
   return "0x" + Buffer.from(sig).toString("hex");
 }
 

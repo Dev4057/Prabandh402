@@ -1,4 +1,3 @@
-import "fastify";
 import { NodePgDatabase } from "drizzle-orm/node-postgres";
 
 declare module "fastify" {

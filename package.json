@@ -15,7 +15,9 @@
     "agent:demo": "tsx agent-cli/src/demo.ts",
     "build": "tsc -p tsconfig.json",
     "lint": "eslint . --ext .ts",
-    "test": "vitest"
+    "test": "vitest",
+    "db:generate": "drizzle-kit generate:pg",
+    "db:migrate": "drizzle-kit push:pg"
   },
   "repository": {
     "type": "git",
@@ -33,6 +35,8 @@
     "@fastify/cors": "^11.2.0",
     "@fastify/helmet": "^13.0.2",
     "@fastify/rate-limit": "^10.3.0",
+    "@noble/curves": "^2.0.1",
+    "@noble/hashes": "^2.0.1",
     "@noble/secp256k1": "^3.0.0",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.45.1",
@@ -48,6 +52,7 @@
     "@types/node": "^25.0.9",
     "@types/pg": "^8.16.0",
     "@types/pino": "^7.0.4",
+    "drizzle-kit": "^0.31.8",
     "eslint": "^9.39.2",
     "eslint-plugin-react": "^7.37.5",
     "globals": "^17.0.0",
