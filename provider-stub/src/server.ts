@@ -27,17 +27,6 @@ export async function buildServer() {
   return app;
 }
 
-// ESM-friendly entrypoint check
-if (import.meta.main) {
-  (async () => {
-    const app = await buildServer();
-    const port = Number(process.env.PROVIDER_PORT || 4001);
-    await app.listen({ port, host: "0.0.0.0" });
-    app.log.info(`Provider running on ${port}`);
-  })();
-}
-
-
 // ESM-friendly entrypoint check for Node.js
 const isMain = process.argv[1] === fileURLToPath(import.meta.url);
 

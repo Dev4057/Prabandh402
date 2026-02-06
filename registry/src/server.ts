@@ -1,12 +1,12 @@
 // What it does: Boots the registry server, wires DB, healthcheck, and SID routes.
 // Real-world role: Runs the registry service (identity directory) on the configured port.
 
-
 import Fastify from "fastify";
 import dotenv from "dotenv";
 import { sidRoutes } from "./routes/sidRoutes.js";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
+import { fileURLToPath } from "url";
 
 export async function buildServer() {
   dotenv.config();
@@ -27,8 +27,10 @@ export async function buildServer() {
   return app;
 }
 
-// ESM-friendly entrypoint check
-if (import.meta.main) {
+// ESM-friendly entrypoint check for Node.js
+const isMain = process.argv[1] === fileURLToPath(import.meta.url);
+
+if (isMain) {
   (async () => {
     const app = await buildServer();
     const port = Number(process.env.REGISTRY_PORT || 4000);
