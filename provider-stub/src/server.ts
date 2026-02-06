@@ -2,8 +2,9 @@
 // Real-world role: Runs the provider service exposing the payable endpoint and receipt flow.
 import Fastify from "fastify";
 import dotenv from "dotenv";
-import { bookingRoutes } from "./routes/booking";
-import { callbackRoutes } from "./routes/callback";
+import { bookingRoutes } from "./routes/booking.js";
+import { callbackRoutes } from "./routes/callback.js";
+import { fileURLToPath } from "url";
 
 export async function buildServer() {
   dotenv.config();
@@ -26,8 +27,10 @@ export async function buildServer() {
   return app;
 }
 
-// ESM-friendly entrypoint check
-if (import.meta.main) {
+// ESM-friendly entrypoint check for Node.js
+const isMain = process.argv[1] === fileURLToPath(import.meta.url);
+
+if (isMain) {
   (async () => {
     const app = await buildServer();
     const port = Number(process.env.PROVIDER_PORT || 4001);

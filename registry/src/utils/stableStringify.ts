@@ -1,10 +1,6 @@
 // What it does: Deterministically stringifies JSON (sorted keys). Used before signing/verifying.
 // Real-world role: Ensures signatures are stable across platforms/serializations so verifying the same payload always succeeds.
 
-
-
-
-
 // Deterministic JSON stringify for signing/verifying.
 export function stableStringify(obj: unknown): string {
   return JSON.stringify(sort(obj));

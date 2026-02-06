@@ -3,7 +3,7 @@
 
 
 import { FastifyInstance } from "fastify";
-import { signPayload } from "../crypto";
+import { signPayload } from "../crypto.js";
 import { randomUUID } from "crypto";
 
 export async function bookingRoutes(app: FastifyInstance) {

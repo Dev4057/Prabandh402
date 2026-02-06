@@ -1,7 +1,7 @@
 import { FastifyInstance } from "fastify";
-import { SidSchema, verifySid, Sid } from "../sid";
-import { checkDnsTxt } from "../trust/dnsCheck";
-import { sids } from "../db/schema";
+import { SidSchema, verifySid, Sid } from "../sid.js";
+import { checkDnsTxt } from "../trust/dnsCheck.js";
+import { sids } from "../db/schema.js";
 import { eq } from "drizzle-orm";
 
 interface SidBody {

@@ -5,9 +5,9 @@
 // Real-world role: Validates and signs your Service Identity Document so callers can cryptographically trust who you are (host/key/payment binding).
 
 import { z } from "zod";
-import { stableStringify } from "./utils/stableStringify";
-import { secp256k1 } from "@noble/curves/secp256k1";
-import { sha256 } from "@noble/hashes/sha256";
+import { stableStringify } from "./utils/stableStringify.js";
+import { secp256k1 } from "@noble/curves/secp256k1.js";
+import { sha256 } from "@noble/hashes/sha2.js";
 
 // Zod schema for the Service Identity Document (SID).
 export const SidSchema = z.object({
@@ -33,7 +33,7 @@ export async function signSid(sid: Sid, privKeyHex: string): Promise<string> {
   const message = stableStringify(sid);
   const digest = messageHash(message); // 32-byte hash
   const privBytes = hexToBytes(privKeyHex.replace(/^0x/, ""));
-  const sig = secp256k1.sign(digest, privBytes).toCompactRawBytes(); // 64-byte compact
+  const sig = secp256k1.sign(digest, privBytes); // 64-byte compact
   return "0x" + Buffer.from(sig).toString("hex");
 }
 

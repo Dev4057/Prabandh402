@@ -6,8 +6,8 @@
 // Verifies the provider’s signed receipt.
 // Real-world role: Minimal agent discovery → trust verification → payment ask → “payment” → receipt verification.
 
-import { verifyPayload } from "../../provider-stub/src/crypto";
-import { Sid } from "../../registry/src/sid";
+import { verifyPayload } from "../../provider-stub/src/crypto.js";
+import { Sid } from "../../registry/src/sid.js";
 
 type SidRow = { payload: Sid };
 
