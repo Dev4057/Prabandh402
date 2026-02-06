@@ -8,7 +8,7 @@
 
 ---
 
-## 📋 Table of Contents
+##  Table of Contents
 
 - [Product in One Sentence](#-product-in-one-sentence)
 - [The Problem](#-the-problem)
@@ -26,13 +26,13 @@
 
 ---
 
-## 🎯 Product in One Sentence
+##  Product in One Sentence
 
 **Prabandh402** is an agent-native logistics transaction layer that enables AI systems to autonomously discover, verify, and book real-world logistics services using **cryptographic service identity (EIP-8004)** and **instant HTTP-native payments (x402)**, without human intervention or intermediaries.
 
 ---
 
-## 🔴 The Problem
+##  The Problem
 
 Modern supply chains rely on manual discovery, trust, and payment processes that are **incompatible with autonomous AI systems**.
 
@@ -49,7 +49,7 @@ While AI can optimize routes, inventory, and demand forecasting, it **cannot**:
 
 ---
 
-## 🟡 How It's Solved Today
+##  How It's Solved Today
 
 | Layer | Current Approach | Problems |
 |-------|------------------|----------|
@@ -63,7 +63,7 @@ While AI can optimize routes, inventory, and demand forecasting, it **cannot**:
 
 ---
 
-## 🟢 Our Solution
+##  Our Solution
 
 Prabandh402 combines two complementary protocols to solve both **identity/trust** and **payment** challenges:
 
@@ -88,7 +88,7 @@ Prabandh402 combines two complementary protocols to solve both **identity/trust*
 
 ---
 
-## 🔗 Two Protocols, One System
+##  Two Protocols, One System
 
 ### EIP-8004: Service Identity Document (SID)
 
@@ -179,7 +179,7 @@ Agent                              Provider
 
 ---
 
-## 🏗 Architecture
+##  Architecture
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
@@ -250,7 +250,7 @@ Agent                              Provider
 
 ---
 
-## 🔄 The Complete Flow
+##  The Complete Flow
 
 ### Step-by-Step Breakdown
 
@@ -321,7 +321,7 @@ Agent                              Provider
 
 ┌─────────────────────────────────────────────────────────────────────────┐
 │ STEP 4: VERIFICATION (Agent verifies before paying)                    │
-��─────────────────────────────────────────────────────────────────────────┤
+─────────────────────────────────────────────────────────────────────────┤
 │                                                                         │
 │  Agent (local verification)                                            │
 │     │                                                                   │
@@ -389,7 +389,7 @@ Agent                              Provider
 
 ---
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 Prabandh402/
@@ -433,7 +433,7 @@ Prabandh402/
 
 ---
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### Prerequisites
 
@@ -527,7 +527,7 @@ PROVIDER_TOKEN_ADDRESS=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913  # USDC on Bas
 PROVIDER_NETWORK=base
 
 # Attestation key (signs SIDs and 402 payloads)
-# ⚠️  NEVER COMMIT THIS - Generate with: openssl rand -hex 32
+#   NEVER COMMIT THIS - Generate with: openssl rand -hex 32
 PROVIDER_ATTESTATION_PRIVATE_KEY=0x...
 
 # ═══════════════════════════════════════════════════════════════
@@ -544,7 +544,7 @@ FACILITATOR_URL=http://localhost:4002
 
 ---
 
-## 📡 API Reference
+##  API Reference
 
 ### Registry Service — EIP-8004 Identity Layer
 
@@ -565,7 +565,7 @@ FACILITATOR_URL=http://localhost:4002
 
 ---
 
-## 🔐 Security Model
+##  Security Model
 
 ### Protocol Separation
 
@@ -607,7 +607,7 @@ FACILITATOR_URL=http://localhost:4002
 
 ## 🗺 Roadmap
 
-### Phase 1: Foundation ✅ (Current)
+### Phase 1: Foundation (Current)
 - [x] EIP-8004 SID schema and signing
 - [x] Registry with PostgreSQL storage
 - [x] Provider stub with HTTP 402 responses
@@ -635,7 +635,7 @@ FACILITATOR_URL=http://localhost:4002
 
 ---
 
-## 📚 References
+##  References
 
 - **EIP-8004**: Service Identity Document standard for cryptographic service identity
 - **x402**: HTTP-native payment protocol using status code 402
@@ -643,7 +643,7 @@ FACILITATOR_URL=http://localhost:4002
 
 ---
 
-## 📄 License
+##  License
 
 This project is licensed under the ISC License.
 
