@@ -68,7 +68,7 @@ While AI can optimize routes, inventory, and demand forecasting, it **cannot**:
 Prabandh402 combines two complementary protocols to solve both **identity/trust** and **payment** challenges:
 
 ```
-┌─────────────────────────────────────────────────────────────────────��
+┌───────────────────────────────────────────────────────────────────── 
 │                         PRABANDH402                                 │
 │                                                                     │
 │    ┌─────────────────────┐      ┌─────────────────────┐            │
