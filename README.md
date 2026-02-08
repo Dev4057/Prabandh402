@@ -4,7 +4,7 @@
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg)](https://www.typescriptlang.org/)
 [![Fastify](https://img.shields.io/badge/Fastify-5.7-green.svg)](https://www.fastify.io/)
-[![License](https://img.shields.io/badge/License-ISC-yellow.svg)](LICENSE)
+![License](https://img.shields.io/badge/license-MIT-green)
 
 ---
 
@@ -645,7 +645,7 @@ FACILITATOR_URL=http://localhost:4002
 
 ##  License
 
-This project is licensed under the ISC License.
+This project is licensed under the MIT License.
 
 ---
 
