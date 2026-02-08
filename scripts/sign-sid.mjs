@@ -1,7 +1,14 @@
 import { readFileSync } from "fs";
-import { sha256 } from "@noble/hashes/sha256";
-import { hexToBytes } from "@noble/hashes/utils";
-import { secp256k1 } from "@noble/curves/secp256k1";
+import { sha256 } from "@noble/hashes/sha2.js";
+import { secp256k1 } from "@noble/curves/secp256k1.js";
+
+function hexToBytes(hex) {
+  if (hex.length % 2 !== 0) throw new Error("Invalid hex length");
+  const arr = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < hex.length; i += 2)
+    arr[i / 2] = parseInt(hex.slice(i, i + 2), 16);
+  return arr;
+}
 
 function stableStringify(obj) {
   return JSON.stringify(sort(obj));
@@ -27,7 +34,7 @@ const msg = stableStringify(sid);
 const digest = sha256(new TextEncoder().encode(msg)); // 32-byte hash
 const privBytes = hexToBytes(privHex);
 
-// secp256k1.sign returns a Signature object; get compact 64-byte form
-const sig = secp256k1.sign(digest, privBytes).toCompactRawBytes();
+// secp256k1.sign returns a Uint8Array in v2
+const sig = secp256k1.sign(digest, privBytes);
 
 console.log("0x" + Buffer.from(sig).toString("hex"));

@@ -14,10 +14,10 @@ export async function signPayload(payload: any, privKeyHex: string): Promise<str
 }
 
 export async function verifyPayload(payload: any, signatureHex: string, pubKeyHex: string): Promise<boolean> {
-  const msg = JSON.stringify(payload);
+  const msg = stableStringify(payload);  // ✅ Must match signPayload
   const digest = sha256(new TextEncoder().encode(msg));
-  const sigBytes = Buffer.from(signatureHex.replace(/^0x/, ""), "hex");
-  const pubBytes = Buffer.from(pubKeyHex.replace(/^0x/, ""), "hex");
+  const sigBytes = hexToBytes(signatureHex.replace(/^0x/, ""));
+  const pubBytes = hexToBytes(pubKeyHex.replace(/^0x/, ""));
   return secp256k1.verify(sigBytes, digest, pubBytes);
 }
 
