@@ -1,5 +1,11 @@
 // What it does: Boots the provider stub server, healthcheck, booking (402) route, and callback route.
 // Real-world role: Runs the provider service exposing the payable endpoint and receipt flow.
+// What? Sets up a Fastify web server for the provider (the “seller”)
+// Why? Required so agent-cli can contact it and ask for bookings and receipts
+// Links with?
+// Sets up /booking route (offers service)
+// Sets up /payment/confirm route (gives receipts)
+// Imports cryptographic code for signing
 import Fastify from "fastify";
 import dotenv from "dotenv";
 import { bookingRoutes } from "./routes/booking.js";

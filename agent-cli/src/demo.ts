@@ -6,6 +6,29 @@
 // Verifies the provider’s signed receipt.
 // Real-world role: Minimal agent discovery → trust verification → payment ask → “payment” → receipt verification.
 
+
+// What? The most important demo script: shows the “customer” buying a service, step by step!
+
+// What it does:
+
+// Fetches a list of providers from the registry
+// Picks one (in code: just picks the first)
+// Books a service with the provider
+// Gets a “Payment Required” (HTTP 402) reply
+// Checks/Verifies the reply (Did a real Provider really send this? Is the payment address correct?)
+// “Pays” (sends a fake transaction, can be a real payment in the future)
+// Asks Provider for a Receipt (proves service was delivered)
+// Verifies the Receipt signature
+// Why?
+// In real life: “If Amazon Alexa wants to book a truck, it should check the provider is real, pay instantly, and get proof without humans.” This script shows all that happening, automated!
+
+// Links with?
+
+// Talks to registry (to find providers)
+// Talks to provider-stub (to book/pay)
+// Uses SID (service identity) to check who’s legit
+
+
 import { verifyPayload } from "../../provider-stub/src/crypto.js";
 import { Sid } from "../../registry/src/sid.js";
 

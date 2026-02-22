@@ -1,12 +1,20 @@
 // What it does: Signs and verifies provider payloads with secp256k1.
 // Real-world role: Provider proves authenticity of 402 requests and receipts.
 
+// What? Handles generating/verifying digital signatures.
+// Why?
+// Without signatures, anyone could fake a provider reply. This ensures only the true provider can create a payment instruction or receipt.
+// Analogy:
+// It’s like the provider “stamping and signing” their invoice so everyone knows they approved it.
+// Used by:
+// Both /booking and /callback.
+
 import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { stableStringify } from "../../registry/src/utils/stableStringify.js";
 
 export async function signPayload(payload: any, privKeyHex: string): Promise<string> {
-  const msg = stableStringify(payload);  // ✅ Deterministic
+  const msg = stableStringify(payload);  //  Deterministic
   const digest = sha256(new TextEncoder().encode(msg));
   const privBytes = hexToBytes(privKeyHex.replace(/^0x/, ""));
   const sig = secp256k1.sign(digest, privBytes);
@@ -14,7 +22,7 @@ export async function signPayload(payload: any, privKeyHex: string): Promise<str
 }
 
 export async function verifyPayload(payload: any, signatureHex: string, pubKeyHex: string): Promise<boolean> {
-  const msg = stableStringify(payload);  // ✅ Must match signPayload
+  const msg = stableStringify(payload);  //  Must match signPayload
   const digest = sha256(new TextEncoder().encode(msg));
   const sigBytes = hexToBytes(signatureHex.replace(/^0x/, ""));
   const pubBytes = hexToBytes(pubKeyHex.replace(/^0x/, ""));

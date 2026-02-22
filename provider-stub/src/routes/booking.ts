@@ -2,6 +2,18 @@
 // Real-world role: Represents a payable API call: provider tells the agent “pay this amount to this address under these terms,” signed by the provider’s attestation key.
 
 
+
+// What? Endpoint that the agent calls to book a service.
+// What it does:
+// Checks the info the agent sends,
+// Prepares a “cost and instructions” (how much, where to pay, etc.),
+// Signs the info with the provider's secret key,
+// Sends a HTTP 402 (Payment Required) status with those details.
+// Why?
+// In real-world booking: "Here’s your invoice, and proof I wrote this—pay me to this address."
+// Links?
+// Uses cryptography from crypto.ts to sign the offer.
+
 import { FastifyInstance } from "fastify";
 import { signPayload } from "../crypto.js";
 import { randomUUID } from "crypto";
