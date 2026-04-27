@@ -1,10 +1,12 @@
 services:
+
+  # ── PostgreSQL ────────────────────────────────────────────────────────────
   database:
     image: postgres:15
     environment:
-      POSTGRES_USER: postgres
+      POSTGRES_USER:     postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: registry
+      POSTGRES_DB:       registry
     ports:
       - "5432:5432"
     volumes:
@@ -12,36 +14,94 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
-      timeout: 5s
-      retries: 5
+      timeout:  5s
+      retries:  5
 
+  # ── Registry ──────────────────────────────────────────────────────────────
   registry:
     build:
-      context: .
+      context:    .
       dockerfile: Dockerfile
     command: npm run dev:registry
     ports:
       - "4000:4000"
     environment:
-      - REGISTRY_PORT=4000
-      - REGISTRY_DB_URL=postgres://postgres:postgres@database:5432/registry
+      REGISTRY_PORT:   4000
+      REGISTRY_DB_URL: postgres://postgres:postgres@database:5432/registry
     depends_on:
       database:
         condition: service_healthy
 
-  provider:
+  # ── Event Hub (SSE bus for the dashboard) ────────────────────────────────
+  event-hub:
     build:
-      context: .
+      context:    .
+      dockerfile: Dockerfile
+    command: tsx event-hub/src/server.ts
+    ports:
+      - "4010:4010"
+    environment:
+      EVENT_HUB_PORT: 4010
+
+  # ── Provider 1 — FastShip Express ────────────────────────────────────────
+  provider-1:
+    build:
+      context:    .
       dockerfile: Dockerfile
     command: npm run dev:provider:run
     ports:
       - "4001:4001"
-    environment:
-      - PROVIDER_PORT=4001
-      - PROVIDER_HOST=http://localhost:4001
-      - PROVIDER_CALLBACK_URL=http://localhost:4001/payment/confirm
     env_file:
       - .env
+    environment:
+      PROVIDER_PORT:                 4001
+      PROVIDER_HOST:                 http://localhost:4001
+      PROVIDER_CALLBACK_URL:         http://localhost:4001/payment/confirm
+      PROVIDER_NETWORK:              base-sepolia
+      PROVIDER_TOKEN_ADDRESS:        "0x036CbD53842c5426634e7929541eC2318f3dCF7e"
+      PROVIDER_PAYMENT_ADDRESS:      "${PROVIDER_1_PAYMENT_ADDRESS:-0x988c50E5ad6371c4306Af520776bF7aC3246984A}"
+      PROVIDER_AMOUNT:                  "0.010"
+      PROVIDER_ATTESTATION_PRIVATE_KEY: "${PROVIDER_1_PRIVATE_KEY:-0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80}"
+    depends_on:
+      - registry
+
+  # ── Provider 2 — QuickFreight Ltd ────────────────────────────────────────
+  provider-2:
+    build:
+      context:    .
+      dockerfile: Dockerfile
+    command: npm run dev:provider:run
+    ports:
+      - "4002:4002"
+    environment:
+      PROVIDER_PORT:                 4002
+      PROVIDER_HOST:                 http://localhost:4002
+      PROVIDER_CALLBACK_URL:         http://localhost:4002/payment/confirm
+      PROVIDER_NETWORK:              base-sepolia
+      PROVIDER_TOKEN_ADDRESS:        "0x036CbD53842c5426634e7929541eC2318f3dCF7e"
+      PROVIDER_PAYMENT_ADDRESS:      "0x240503ED0B69515c8239F17735807bA73b4C798B"
+      PROVIDER_AMOUNT:                  "0.008"
+      PROVIDER_ATTESTATION_PRIVATE_KEY: "${PROVIDER_2_PRIVATE_KEY:-0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d}"
+    depends_on:
+      - registry
+
+  # ── Provider 3 — GlobalMove Co. ──────────────────────────────────────────
+  provider-3:
+    build:
+      context:    .
+      dockerfile: Dockerfile
+    command: npm run dev:provider:run
+    ports:
+      - "4003:4003"
+    environment:
+      PROVIDER_PORT:                 4003
+      PROVIDER_HOST:                 http://localhost:4003
+      PROVIDER_CALLBACK_URL:         http://localhost:4003/payment/confirm
+      PROVIDER_NETWORK:              base-sepolia
+      PROVIDER_TOKEN_ADDRESS:        "0x036CbD53842c5426634e7929541eC2318f3dCF7e"
+      PROVIDER_PAYMENT_ADDRESS:      "0x4ff39F71CbD38b49f1013953b51708341263914b"
+      PROVIDER_AMOUNT:                  "0.012"
+      PROVIDER_ATTESTATION_PRIVATE_KEY: "${PROVIDER_3_PRIVATE_KEY:-0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a}"
     depends_on:
       - registry
 

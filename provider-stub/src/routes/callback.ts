@@ -24,12 +24,9 @@ interface CallbackBody {
 
 export async function callbackRoutes(app: FastifyInstance) {
   app.post<{ Body: CallbackBody }>("/payment/confirm", async (req, reply) => {
-    // Phase 1: mock verification; assume tx is valid if amount matches.
+    // Phase 1: accept whatever amount the provider itself advertised.
+    // In Phase 2 this will verify the on-chain tx.
     const { tx_hash, booking_id, nonce, amount } = req.body;
-    const expectedAmount = "0.01"; // Updated to match the new 1-cent invoice
-    if (amount !== expectedAmount) {
-      return reply.code(400).send({ error: "amount_mismatch" });
-    }
 
     const receipt = {
       booking_id,

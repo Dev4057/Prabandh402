@@ -2,6 +2,7 @@
 // Real-world role: Runs the registry service (identity directory) on the configured port.
 
 import Fastify from "fastify";
+import cors from "@fastify/cors";
 import dotenv from "dotenv";
 import { sidRoutes } from "./routes/sidRoutes.js";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -17,6 +18,7 @@ export async function buildServer() {
   }
 
   const app = Fastify({ logger: true });
+  await app.register(cors, { origin: true });
 
   const pool = new Pool({ connectionString: dbUrl });
   app.decorate("db", drizzle(pool));

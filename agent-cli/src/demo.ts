@@ -1,171 +1,266 @@
-// What it does: A CLI script that drives the happy path:
-// Fetches a SID from the registry.
-// Calls provider /booking to get a signed 402 payload.
-// Verifies the 402 signature with the SID public key.
-// Mocks payment (produces a fake tx hash) and calls the provider callback.
-// Verifies the provider’s signed receipt.
-// Real-world role: Minimal agent discovery → trust verification → payment ask → “payment” → receipt verification.
-
-
-// What? The most important demo script: shows the “customer” buying a service, step by step!
-
-// What it does:
-
-// Fetches a list of providers from the registry
-// Picks one (in code: just picks the first)
-// Books a service with the provider
-// Gets a “Payment Required” (HTTP 402) reply
-// Checks/Verifies the reply (Did a real Provider really send this? Is the payment address correct?)
-// “Pays” (sends a fake transaction, can be a real payment in the future)
-// Asks Provider for a Receipt (proves service was delivered)
-// Verifies the Receipt signature
-// Why?
-// In real life: “If Amazon Alexa wants to book a truck, it should check the provider is real, pay instantly, and get proof without humans.” This script shows all that happening, automated!
-
-// Links with?
-
-// Talks to registry (to find providers)
-// Talks to provider-stub (to book/pay)
-// Uses SID (service identity) to check who’s legit
-
+// Agent demo: discovers all providers, quotes all, picks cheapest, books → pays → verifies receipt.
+// Emits structured events to the Event Hub so the dashboard can render the flow live.
+// Loops indefinitely (Ctrl+C to stop).
 
 import "dotenv/config";
 import { verifyPayload } from "../../provider-stub/src/crypto.js";
 import { Sid } from "../../registry/src/sid.js";
-import { createWalletClient, http, publicActions, encodeFunctionData, parseUnits } from "viem";
+import {
+  createWalletClient,
+  http,
+  publicActions,
+  encodeFunctionData,
+  parseUnits,
+} from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { baseSepolia } from "viem/chains";
 
+// ── Config ──────────────────────────────────────────────────────────────────
+const REGISTRY_URL  = process.env.AGENT_REGISTRY_URL  ?? "http://localhost:4000";
+const EVENT_HUB_URL = process.env.EVENT_HUB_URL       ?? "http://localhost:4010";
+const LOOP_DELAY_MS = Number(process.env.DEMO_LOOP_DELAY_MS ?? 12_000);
+
+// ── Event emitter ────────────────────────────────────────────────────────────
+async function emit(type: string, message: string, extra: Record<string, unknown> = {}) {
+  try {
+    await fetch(`${EVENT_HUB_URL}/event`, {
+      method:  "POST",
+      headers: { "content-type": "application/json" },
+      body:    JSON.stringify({ type, message, ...extra }),
+    });
+  } catch {
+    // Event hub might not be running; demo still works
+  }
+  console.log(`[${type}] ${message}`);
+}
+
+function sleep(ms: number) {
+  return new Promise<void>((r) => setTimeout(r, ms));
+}
+
+// ── ERC-20 ABI (transfer only) ───────────────────────────────────────────────
+const ERC20_TRANSFER_ABI = [
+  {
+    name: "transfer",
+    type: "function",
+    inputs: [
+      { name: "recipient", type: "address" },
+      { name: "amount",    type: "uint256" },
+    ],
+    outputs: [{ name: "", type: "bool" }],
+  },
+] as const;
+
 type SidRow = { payload: Sid };
 
-async function main() {
-  const registryUrl = process.env.AGENT_REGISTRY_URL || "http://localhost:4000";
-  const providerUrl = process.env.AGENT_PROVIDER_URL || "http://localhost:4001";
+type Quote = {
+  sid:     Sid;
+  booking: Record<string, string>;
+};
 
-  // Check for Agent's blockchain wallet
-  if (!process.env.AGENT_PAYMENT_PRIVATE_KEY) {
-    console.warn("⚠️ Warning: AGENT_PAYMENT_PRIVATE_KEY is not set in .env");
-    console.warn("⚠️ The transaction step will fail unless you provide a Sepolia private key loaded with test ETH.");
+// ── Main booking round ────────────────────────────────────────────────────────
+async function runBookingRound() {
+  // ── Step 1: Discover ──────────────────────────────────────────────────────
+  await emit("discovery", "Agent scanning registry for available providers…");
+
+  const rows: SidRow[] = await fetch(`${REGISTRY_URL}/search`)
+    .then((r) => r.json())
+    .catch(() => []);
+
+  if (!rows.length) {
+    await emit("error", "No providers found in registry. Run: npm run seed");
+    return;
   }
 
-  console.log("1) Fetch SID from registry");
-  const sidRow = await fetch(`${registryUrl}/search`)
-    .then((r) => r.json())
-    .then((rows: SidRow[]) => rows[0]);
-  if (!sidRow) throw new Error("No SID in registry; submit one first.");
-  const sid: Sid = sidRow.payload;
-  console.log("   service_id:", sid.service_id);
+  await emit("discovery", `Found ${rows.length} provider(s) in registry.`);
 
-  console.log("2) Call provider /booking to get 402 payload");
-  const bookingResp = await fetch(`${providerUrl}/booking`, { method: "POST" });
-  const booking = await bookingResp.json();
-  console.log("   402 payload:", booking);
+  // ── Step 2: Quote all providers in parallel ───────────────────────────────
+  await emit("step", `Requesting quotes from all ${rows.length} providers…`, { step: "quote" });
 
-  console.log("3) Verify 402 signature with SID public key");
-  const ok = await verifyPayload(
-    {
-      booking_id: booking.booking_id,
-      network: booking.network,
-      token: booking.token,
-      amount: booking.amount,
-      payment_address: booking.payment_address,
-      nonce: booking.nonce,
-      expires_at: booking.expires_at,
-      callback_url: booking.callback_url,
-      facilitator_url: booking.facilitator_url,
-      host: booking.host,
-    },
-    booking.signature,
-    sid.verification.public_key
+  const quoteResults = await Promise.all(
+    rows.map(async (row): Promise<Quote | null> => {
+      const sid = row.payload;
+      const providerUrl = sid.hosts[0];
+      try {
+        const resp = await fetch(`${providerUrl}/booking`, { method: "POST" });
+        const booking: Record<string, string> = await resp.json();
+        return { sid, booking };
+      } catch {
+        return null;
+      }
+    })
   );
-  if (!ok) throw new Error("402 signature invalid");
-  console.log("   402 signature valid ✓");
 
-  console.log("4) Initiating real blockchain payment on Base Sepolia...");
-  let mockTxHash = "0x" + "ab".repeat(32);
+  // Filter out failed requests and verify all signatures
+  const validQuotes: Quote[] = [];
+  for (const q of quoteResults) {
+    if (!q) continue;
+    const { sid, booking } = q;
+    const sigOk = await verifyPayload(
+      {
+        booking_id:      booking.booking_id,
+        network:         booking.network,
+        token:           booking.token,
+        amount:          booking.amount,
+        payment_address: booking.payment_address,
+        nonce:           booking.nonce,
+        expires_at:      booking.expires_at,
+        callback_url:    booking.callback_url,
+        facilitator_url: booking.facilitator_url,
+        host:            booking.host,
+      },
+      booking.signature,
+      sid.verification.public_key
+    );
+    if (sigOk) {
+      validQuotes.push(q);
+    } else {
+      await emit("error", `Signature INVALID from ${sid.service_id} — skipping.`);
+    }
+  }
+
+  if (!validQuotes.length) {
+    await emit("error", "No providers passed signature verification.");
+    return;
+  }
+
+  await emit("signature_verified",
+    `${validQuotes.length}/${rows.length} providers passed signature verification ✓`,
+    { verified: validQuotes.length, total: rows.length }
+  );
+
+  // ── Step 3: Pick cheapest ─────────────────────────────────────────────────
+  validQuotes.sort((a, b) => parseFloat(a.booking.amount) - parseFloat(b.booking.amount));
+  const best = validQuotes[0];
+  const { sid, booking } = best;
+
+  await emit("provider_selected",
+    `Best price: ${sid.service_id} @ ${booking.amount} USDC (cheapest of ${validQuotes.length})`,
+    { service_id: sid.service_id, amount: booking.amount }
+  );
+
+  // ── Step 4: Pay ───────────────────────────────────────────────────────────
+  await emit("payment",
+    `Initiating payment: ${booking.amount} USDC → ${booking.payment_address}`,
+    { step: "pay", service_id: sid.service_id, amount: booking.amount }
+  );
+
+  let txHash = "0x" + "ab".repeat(32); // mock fallback
 
   if (process.env.AGENT_PAYMENT_PRIVATE_KEY) {
     try {
-      // Create Viem Account
-      const account = privateKeyToAccount(process.env.AGENT_PAYMENT_PRIVATE_KEY as `0x${string}`);
-      
-      // Setup Viem Client connecting to Base Sepolia
+      const account = privateKeyToAccount(
+        process.env.AGENT_PAYMENT_PRIVATE_KEY as `0x${string}`
+      );
       const client = createWalletClient({
         account,
-        chain: baseSepolia,
-        transport: http() // Can swap to RPC url (Alchemy/Infura)
+        chain:     baseSepolia,
+        transport: http(),
       }).extend(publicActions);
 
-      console.log(`   Executing payment from Agent wallet: ${account.address}`);
-      console.log(`   Sending ${booking.amount} USDC on Base Sepolia to Provider: ${booking.payment_address}`);
+      await emit("payment",
+        `Executing on-chain transfer from ${account.address}…`,
+        { service_id: sid.service_id }
+      );
 
-      // The ABI strictly needed for transferring an ERC20 token
-      const erc20TransferAbi = [
-        {
-          name: 'transfer',
-          type: 'function',
-          inputs: [
-            { name: 'recipient', type: 'address' },
-            { name: 'amount', type: 'uint256' },
-          ],
-          outputs: [{ name: '', type: 'bool' }],
-        },
-      ] as const;
-
-      // USDC has 6 decimal places (unlike ETH which has 18)
-      const amountToPay = parseUnits(booking.amount, 6);
-
-      // Execute a smart contract call to the USDC token address
       const hash = await client.sendTransaction({
-         to: booking.token as `0x${string}`, // The USDC token address
-         data: encodeFunctionData({
-           abi: erc20TransferAbi,
-           functionName: 'transfer',
-           args: [booking.payment_address as `0x${string}`, amountToPay]
-         })
+        to:   booking.token as `0x${string}`,
+        data: encodeFunctionData({
+          abi:          ERC20_TRANSFER_ABI,
+          functionName: "transfer",
+          args:         [
+            booking.payment_address as `0x${string}`,
+            parseUnits(booking.amount, 6),
+          ],
+        }),
       });
 
-      console.log(`   Transaction broadcast! Hash: ${hash}`);
-      console.log(`   Waiting for the block to be mined... (this takes ~5-15 seconds)`);
-      
-      
-      // Wait for it to be confirmed by miners
       const receipt = await client.waitForTransactionReceipt({ hash });
-      console.log(`   Transaction confirmed in block ${receipt.blockNumber} ✓`);
-      
-      // Update our mockTxHash with the real, verifiable hash
-      mockTxHash = receipt.transactionHash;
+      txHash = receipt.transactionHash;
 
+      await emit("payment",
+        `On-chain tx confirmed in block ${receipt.blockNumber}: ${txHash.slice(0, 18)}…`,
+        { service_id: sid.service_id, tx_hash: txHash }
+      );
     } catch (e: any) {
-      console.error("   Blockchain transaction failed. Does the Agent wallet have testnet Base Sepolia ETH (for gas) AND USDC?", e.message);
-      console.log("   Falling back to mock payment hash to continue the demo framework...");
+      await emit("payment",
+        `On-chain payment failed (${e.message}). Falling back to mock tx hash.`,
+        { service_id: sid.service_id }
+      );
     }
   } else {
-    console.log("   No AGENT_PAYMENT_PRIVATE_KEY found. Simulating an instant payment...");
+    await emit("payment",
+      `No AGENT_PAYMENT_PRIVATE_KEY set — using mock tx hash for demo.`,
+      { service_id: sid.service_id }
+    );
   }
 
-  console.log("5) Sending confirmation to Provider callback");
-  const callbackResp = await fetch(booking.callback_url, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      tx_hash: mockTxHash,
-      booking_id: booking.booking_id,
-      nonce: booking.nonce,
-      amount: booking.amount,
-    }),
-  });
-  const callback = await callbackResp.json();
-  console.log("   receipt payload:", callback);
+  // ── Step 5: Send confirmation → get signed receipt ────────────────────────
+  await emit("step", `Sending payment confirmation to ${sid.service_id}…`,
+    { step: "receipt", service_id: sid.service_id });
 
-  console.log("6) Verify final receipt signature");
-  const receiptOk = await verifyPayload(callback.receipt, callback.signature, sid.verification.public_key);
-  if (!receiptOk) throw new Error("Receipt signature invalid");
-  console.log("   Receipt signature valid ✓");
-  console.log("Demo complete: booking confirmed.");
+  let callbackData: { receipt: Record<string, string>; signature: string };
+  try {
+    const callbackResp = await fetch(booking.callback_url, {
+      method:  "POST",
+      headers: { "content-type": "application/json" },
+      body:    JSON.stringify({
+        tx_hash:    txHash,
+        booking_id: booking.booking_id,
+        nonce:      booking.nonce,
+        amount:     booking.amount,
+      }),
+    });
+    callbackData = await callbackResp.json();
+  } catch (e: any) {
+    await emit("error", `Callback request failed: ${e.message}`);
+    return;
+  }
+
+  // ── Step 6: Verify receipt signature ─────────────────────────────────────
+  const receiptOk = await verifyPayload(
+    callbackData.receipt,
+    callbackData.signature,
+    sid.verification.public_key
+  );
+
+  if (!receiptOk) {
+    await emit("error", `Receipt signature INVALID — do not trust this provider.`);
+    return;
+  }
+
+  await emit("signature_verified",
+    `Receipt signature verified ✓`,
+    { service_id: sid.service_id }
+  );
+
+  await emit("booking_complete",
+    `✓ Booking confirmed with ${sid.service_id} — tx: ${txHash.slice(0, 18)}…`,
+    { service_id: sid.service_id, amount: booking.amount, tx_hash: txHash }
+  );
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+// ── Main loop ────────────────────────────────────────────────────────────────
+async function main() {
+  console.log("═══════════════════════════════════════════");
+  console.log("  Prabandh402 Agent Demo — Cheapest-Wins");
+  console.log(`  Registry : ${REGISTRY_URL}`);
+  console.log(`  Event Hub: ${EVENT_HUB_URL}`);
+  console.log(`  Interval : ${LOOP_DELAY_MS / 1000}s between rounds`);
+  console.log("  Dashboard: http://localhost:4010");
+  console.log("  Stop with Ctrl+C");
+  console.log("═══════════════════════════════════════════\n");
+
+  while (true) {
+    console.log("\n────────────── New Round ──────────────");
+    try {
+      await runBookingRound();
+    } catch (err: any) {
+      await emit("error", `Unexpected error: ${err.message}`);
+    }
+    console.log(`\nWaiting ${LOOP_DELAY_MS / 1000}s before next round…`);
+    await sleep(LOOP_DELAY_MS);
+  }
+}
+
+main();

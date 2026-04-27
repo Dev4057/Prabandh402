@@ -27,7 +27,7 @@ export async function bookingRoutes(app: FastifyInstance) {
       booking_id: bookingId,
       network: process.env.PROVIDER_NETWORK || "base-sepolia",
       token: process.env.PROVIDER_TOKEN_ADDRESS || "0x036CbD53842c5426634e7929541eC2318f3dCF7e", // standard USDC on Base Sepolia
-      amount: "0.01", // Demo amount: 1 cent
+      amount: process.env.PROVIDER_AMOUNT ?? "0.01",
       payment_address: process.env.PROVIDER_PAYMENT_ADDRESS || "0x988c50E5ad6371c4306Af520776bF7aC3246984A", // The user's wallet who will receive the funds
       nonce,
       expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 min

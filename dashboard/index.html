@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prabandh402 — Live Agent Demo</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #070d1a;
+      color: #c8d8e8;
+      font-family: 'Courier New', Courier, monospace;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, #0a1628 0%, #0f1e35 100%);
+      border-bottom: 1px solid #162a45;
+      padding: 18px 36px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .brand h1 { font-size: 1.3rem; color: #38bdf8; letter-spacing: 3px; font-weight: 700; }
+    .brand p  { font-size: 0.7rem; color: #4a6a8a; margin-top: 3px; letter-spacing: 1px; }
+    .conn-status { font-size: 0.72rem; text-align: right; }
+    .dot {
+      display: inline-block; width: 9px; height: 9px;
+      border-radius: 50%; background: #22c55e;
+      margin-right: 6px;
+      animation: blink 2s ease-in-out infinite;
+    }
+    .dot.offline { background: #ef4444; animation: none; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+    /* ── Stats bar ── */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      padding: 20px 36px 0;
+    }
+    .stat {
+      background: #0a1628;
+      border: 1px solid #162a45;
+      border-radius: 8px;
+      padding: 14px 18px;
+      text-align: center;
+    }
+    .stat-val { font-size: 2rem; font-weight: 700; color: #38bdf8; line-height: 1; }
+    .stat-val.green { color: #22c55e; }
+    .stat-val.amber { color: #f59e0b; }
+    .stat-label { font-size: 0.6rem; color: #4a6a8a; letter-spacing: 2px; margin-top: 6px; }
+
+    /* ── Main grid ── */
+    .main {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      padding: 20px 36px 30px;
+    }
+
+    .panel-title {
+      font-size: 0.65rem;
+      letter-spacing: 3px;
+      color: #38bdf8;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    /* ── Provider cards ── */
+    .provider-card {
+      background: #0a1628;
+      border: 1px solid #162a45;
+      border-radius: 8px;
+      padding: 18px;
+      margin-bottom: 14px;
+      transition: border-color .25s, box-shadow .25s;
+      position: relative;
+    }
+    .provider-card.selecting {
+      border-color: #38bdf8;
+      box-shadow: 0 0 18px rgba(56,189,248,.25);
+    }
+    .provider-card.booking {
+      border-color: #f59e0b;
+      box-shadow: 0 0 22px rgba(245,158,11,.35);
+      animation: pulse-amber 1s ease-in-out infinite;
+    }
+    .provider-card.confirmed {
+      border-color: #22c55e;
+      box-shadow: 0 0 18px rgba(34,197,94,.25);
+    }
+    @keyframes pulse-amber {
+      0%,100%{box-shadow:0 0 22px rgba(245,158,11,.35)}
+      50%    {box-shadow:0 0 40px rgba(245,158,11,.65)}
+    }
+
+    .card-header { display: flex; justify-content: space-between; align-items: flex-start; }
+    .card-name   { font-size: .95rem; font-weight: 700; color: #e2eaf2; }
+    .card-id     { font-size: .65rem; color: #4a6a8a; margin-top: 3px; }
+    .badge {
+      font-size: .62rem; padding: 3px 10px; border-radius: 12px;
+      background: #0f1e35; color: #4a6a8a; letter-spacing: 1px;
+      white-space: nowrap;
+    }
+    .badge.idle      { background: #0f1e35; color: #4a6a8a; }
+    .badge.selecting { background: #0c2040; color: #38bdf8; }
+    .badge.booking   { background: #271a00; color: #f59e0b; }
+    .badge.confirmed { background: #0a2010; color: #22c55e; }
+
+    .caps { display: flex; flex-wrap: wrap; gap: 5px; margin: 12px 0; }
+    .cap {
+      background: #0f1e35; color: #38bdf8;
+      font-size: .6rem; padding: 2px 8px; border-radius: 10px; letter-spacing: 1px;
+    }
+    .card-meta { display: flex; justify-content: space-between; align-items: center; }
+    .price { color: #22c55e; font-weight: 700; font-size: .8rem; }
+    .addr  { color: #4a6a8a; font-size: .6rem; }
+
+    /* ── Event log ── */
+    .log-wrap {
+      background: #040a14;
+      border: 1px solid #162a45;
+      border-radius: 8px;
+      height: 515px;
+      overflow-y: auto;
+      padding: 12px;
+      scroll-behavior: smooth;
+    }
+    .log-wrap::-webkit-scrollbar { width: 4px; }
+    .log-wrap::-webkit-scrollbar-track { background: #040a14; }
+    .log-wrap::-webkit-scrollbar-thumb { background: #162a45; border-radius: 2px; }
+
+    .log-entry {
+      display: flex; gap: 10px;
+      padding: 3px 6px; border-radius: 3px;
+      font-size: .72rem; line-height: 1.7;
+    }
+    .log-entry:hover { background: rgba(22,42,69,.4); }
+    .log-ts   { color: #2a4060; min-width: 88px; flex-shrink: 0; }
+    .log-msg  { color: #6a8aaa; }
+    .log-msg.info      { color: #38bdf8; }
+    .log-msg.success   { color: #22c55e; }
+    .log-msg.warn      { color: #f59e0b; }
+    .log-msg.highlight { color: #e2eaf2; font-weight: 700; }
+    .log-msg.error     { color: #ef4444; }
+    .log-msg.dim       { color: #3a5070; }
+
+    /* ── Flow bar ── */
+    .flow-bar {
+      grid-column: 1 / -1;
+      background: #0a1628;
+      border: 1px solid #162a45;
+      border-radius: 8px;
+      padding: 18px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .flow-step { text-align: center; flex: 1; }
+    .flow-icon { font-size: 1.4rem; display: block; }
+    .flow-label {
+      font-size: .6rem; letter-spacing: 1px;
+      color: #2a4060; margin-top: 5px;
+      text-transform: uppercase;
+    }
+    .flow-step.active .flow-label { color: #38bdf8; }
+    .flow-step.done   .flow-label { color: #22c55e; }
+    .flow-arrow { color: #162a45; font-size: 1.3rem; padding: 0 4px; }
+    .flow-step.active .flow-arrow { color: #38bdf8; }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="brand">
+    <h1><span class="dot" id="dot"></span>PRABANDH402</h1>
+    <p>Autonomous Agent Logistics Booking &mdash; EIP-8004 + x402 Protocol</p>
+  </div>
+  <div class="conn-status">
+    <div id="conn-label" style="color:#22c55e;">● LIVE</div>
+    <div style="color:#4a6a8a; margin-top:3px; font-size:.65rem;">Event Hub :4010</div>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="stats">
+  <div class="stat">
+    <div class="stat-val" id="s-bookings">0</div>
+    <div class="stat-label">Bookings Completed</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val" id="s-providers">0</div>
+    <div class="stat-label">Providers Online</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val green" id="s-paid">$0.000</div>
+    <div class="stat-label">USDC Settled</div>
+  </div>
+  <div class="stat">
+    <div class="stat-val amber" id="s-sigs">0</div>
+    <div class="stat-label">Signatures Verified</div>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="main">
+
+  <!-- Left: providers -->
+  <div>
+    <div class="panel-title">Registered Providers</div>
+    <div id="provider-list">
+      <div style="color:#4a6a8a;font-size:.8rem;padding:20px;">
+        Waiting for registry…
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: log -->
+  <div>
+    <div class="panel-title">Live Agent Activity</div>
+    <div class="log-wrap" id="log">
+      <div class="log-entry">
+        <span class="log-ts">--:--:--</span>
+        <span class="log-msg dim">Waiting for agent to start…</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom: flow bar -->
+  <div class="flow-bar" id="flow-bar">
+    <div class="flow-step" id="fs-discover">
+      <span class="flow-icon">🔍</span>
+      <div class="flow-label">Discover</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" id="fs-select">
+      <span class="flow-icon">🎯</span>
+      <div class="flow-label">Select</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" id="fs-verify">
+      <span class="flow-icon">🔐</span>
+      <div class="flow-label">Verify SID</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" id="fs-book">
+      <span class="flow-icon">📋</span>
+      <div class="flow-label">Book (402)</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" id="fs-pay">
+      <span class="flow-icon">💸</span>
+      <div class="flow-label">Pay</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" id="fs-receipt">
+      <span class="flow-icon">✅</span>
+      <div class="flow-label">Receipt</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ── State ──
+  let bookings = 0, totalPaid = 0, sigsVerified = 0;
+  const providerState = {};   // service_id → 'idle'|'selecting'|'booking'|'confirmed'
+  let providerData = [];      // raw rows from registry
+
+  const REGISTRY   = 'http://localhost:4000';
+  const EVENT_HUB  = 'http://localhost:4010';
+
+  // ── Helpers ──
+  function ts(iso) {
+    return new Date(iso).toTimeString().slice(0,8);
+  }
+
+  function shortAddr(a) {
+    if (!a || a.length < 12) return a || '';
+    return a.slice(0,8) + '…' + a.slice(-6);
+  }
+
+  function toTitle(slug) {
+    return (slug || '').split('-').map(w => w[0].toUpperCase() + w.slice(1)).join(' ');
+  }
+
+  // ── Flow bar ──
+  const FLOW_STEPS = ['discover','select','verify','book','pay','receipt'];
+  function setFlow(active) {
+    const idx = FLOW_STEPS.indexOf(active);
+    FLOW_STEPS.forEach((s,i) => {
+      const el = document.getElementById('fs-' + s);
+      el.className = 'flow-step' + (i < idx ? ' done' : i === idx ? ' active' : '');
+    });
+  }
+
+  // ── Log ──
+  function addLog(ev) {
+    const log = document.getElementById('log');
+    const entry = document.createElement('div');
+    entry.className = 'log-entry';
+
+    const cls =
+      ev.type === 'booking_complete'    ? 'success'   :
+      ev.type === 'signature_verified'  ? 'success'   :
+      ev.type === 'payment'             ? 'warn'       :
+      ev.type === 'discovery'           ? 'info'       :
+      ev.type === 'provider_selected'   ? 'highlight'  :
+      ev.type === 'error'               ? 'error'      :
+      ev.type === 'step'                ? 'info'       : '';
+
+    entry.innerHTML =
+      `<span class="log-ts">${ts(ev.timestamp)}</span>` +
+      `<span class="log-msg ${cls}">${ev.message}</span>`;
+
+    log.appendChild(entry);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  // ── Provider cards ──
+  function renderProviders(rows) {
+    providerData = rows;
+    document.getElementById('s-providers').textContent = rows.length;
+    const list = document.getElementById('provider-list');
+
+    if (!rows.length) {
+      list.innerHTML = '<div style="color:#4a6a8a;font-size:.8rem;padding:20px;">No providers registered yet. Run the seed script.</div>';
+      return;
+    }
+
+    list.innerHTML = rows.map(row => {
+      const sid   = row.payload;
+      const sid_id = sid.service_id;
+      const state  = providerState[sid_id] || 'idle';
+
+      const badgeLabel =
+        state === 'selecting' ? 'SELECTED →' :
+        state === 'booking'   ? 'BOOKING…'   :
+        state === 'confirmed' ? 'CONFIRMED ✓' :
+        'AVAILABLE';
+
+      const amount = sid.payment ? '0.01 USDC' : '—';
+
+      return `
+        <div class="provider-card ${state}" id="card-${sid_id}">
+          <div class="card-header">
+            <div>
+              <div class="card-name">${toTitle(sid_id)}</div>
+              <div class="card-id">${sid_id}</div>
+            </div>
+            <div class="badge ${state}">${badgeLabel}</div>
+          </div>
+          <div class="caps">
+            ${(sid.capabilities || []).map(c => `<span class="cap">${c}</span>`).join('')}
+          </div>
+          <div class="card-meta">
+            <span class="price">≈ ${amount}</span>
+            <span class="addr">${shortAddr(sid.payment?.address)}</span>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function setCardState(service_id, state) {
+    providerState[service_id] = state;
+    const card = document.getElementById('card-' + service_id);
+    if (!card) return;
+    card.className = 'provider-card ' + state;
+    const badge = card.querySelector('.badge');
+    if (badge) {
+      badge.className = 'badge ' + state;
+      badge.textContent =
+        state === 'selecting' ? 'SELECTED →' :
+        state === 'booking'   ? 'BOOKING…'   :
+        state === 'confirmed' ? 'CONFIRMED ✓' :
+        'AVAILABLE';
+    }
+  }
+
+  // ── Event handler ──
+  function handleEvent(ev) {
+    addLog(ev);
+
+    switch (ev.type) {
+      case 'discovery':
+        setFlow('discover');
+        // reset all cards
+        Object.keys(providerState).forEach(id => setCardState(id, 'idle'));
+        fetchProviders();
+        break;
+
+      case 'provider_selected':
+        setFlow('select');
+        if (ev.service_id) setCardState(ev.service_id, 'selecting');
+        break;
+
+      case 'step':
+        if (ev.step === 'verify')  setFlow('verify');
+        if (ev.step === 'book')    setFlow('book');
+        if (ev.step === 'pay')     setFlow('pay');
+        if (ev.step === 'receipt') setFlow('receipt');
+        if (ev.service_id) setCardState(ev.service_id, 'booking');
+        break;
+
+      case 'signature_verified':
+        sigsVerified++;
+        document.getElementById('s-sigs').textContent = sigsVerified;
+        break;
+
+      case 'payment':
+        if (ev.service_id) setCardState(ev.service_id, 'booking');
+        break;
+
+      case 'booking_complete':
+        setFlow('receipt');
+        if (ev.service_id) setCardState(ev.service_id, 'confirmed');
+        bookings++;
+        totalPaid += parseFloat(ev.amount || '0.01');
+        document.getElementById('s-bookings').textContent = bookings;
+        document.getElementById('s-paid').textContent = '$' + totalPaid.toFixed(3);
+        // reset card after 3s so it's ready for next round
+        setTimeout(() => {
+          if (ev.service_id) setCardState(ev.service_id, 'idle');
+        }, 3000);
+        break;
+    }
+  }
+
+  // ── Registry fetch ──
+  async function fetchProviders() {
+    try {
+      const resp = await fetch(REGISTRY + '/search');
+      if (resp.ok) renderProviders(await resp.json());
+    } catch { /* registry not up yet */ }
+  }
+
+  // ── SSE connection ──
+  let sse;
+  function connectSSE() {
+    sse = new EventSource(EVENT_HUB + '/events/stream');
+
+    sse.onopen = () => {
+      document.getElementById('conn-label').textContent = '● LIVE';
+      document.getElementById('conn-label').style.color  = '#22c55e';
+      document.getElementById('dot').classList.remove('offline');
+    };
+
+    sse.onmessage = e => {
+      try { handleEvent(JSON.parse(e.data)); } catch {}
+    };
+
+    sse.onerror = () => {
+      document.getElementById('conn-label').textContent = '● RECONNECTING…';
+      document.getElementById('conn-label').style.color  = '#f59e0b';
+      document.getElementById('dot').classList.add('offline');
+      sse.close();
+      setTimeout(connectSSE, 3000);
+    };
+  }
+
+  // ── Init ──
+  fetchProviders();
+  connectSSE();
+  setInterval(fetchProviders, 15000);
+</script>
+</body>
+</html>

@@ -33,7 +33,7 @@ export async function signSid(sid: Sid, privKeyHex: string): Promise<string> {
   const message = stableStringify(sid);
   const digest = messageHash(message); // 32-byte hash
   const privBytes = hexToBytes(privKeyHex.replace(/^0x/, ""));
-  const sig = secp256k1.sign(digest, privBytes); // 64-byte compact
+  const sig = secp256k1.sign(digest, privBytes);
   return "0x" + Buffer.from(sig).toString("hex");
 }
 
