@@ -29,14 +29,24 @@
 // Uses SID (service identity) to check who’s legit
 
 
+import "dotenv/config";
 import { verifyPayload } from "../../provider-stub/src/crypto.js";
 import { Sid } from "../../registry/src/sid.js";
+import { createWalletClient, http, publicActions, encodeFunctionData, parseUnits } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { baseSepolia } from "viem/chains";
 
 type SidRow = { payload: Sid };
 
 async function main() {
   const registryUrl = process.env.AGENT_REGISTRY_URL || "http://localhost:4000";
   const providerUrl = process.env.AGENT_PROVIDER_URL || "http://localhost:4001";
+
+  // Check for Agent's blockchain wallet
+  if (!process.env.AGENT_PAYMENT_PRIVATE_KEY) {
+    console.warn("⚠️ Warning: AGENT_PAYMENT_PRIVATE_KEY is not set in .env");
+    console.warn("⚠️ The transaction step will fail unless you provide a Sepolia private key loaded with test ETH.");
+  }
 
   console.log("1) Fetch SID from registry");
   const sidRow = await fetch(`${registryUrl}/search`)
@@ -71,8 +81,70 @@ async function main() {
   if (!ok) throw new Error("402 signature invalid");
   console.log("   402 signature valid ✓");
 
-  console.log("4) Mock payment (Phase 1) and call callback");
-  const mockTxHash = "0x" + "ab".repeat(32);
+  console.log("4) Initiating real blockchain payment on Base Sepolia...");
+  let mockTxHash = "0x" + "ab".repeat(32);
+
+  if (process.env.AGENT_PAYMENT_PRIVATE_KEY) {
+    try {
+      // Create Viem Account
+      const account = privateKeyToAccount(process.env.AGENT_PAYMENT_PRIVATE_KEY as `0x${string}`);
+      
+      // Setup Viem Client connecting to Base Sepolia
+      const client = createWalletClient({
+        account,
+        chain: baseSepolia,
+        transport: http() // Can swap to RPC url (Alchemy/Infura)
+      }).extend(publicActions);
+
+      console.log(`   Executing payment from Agent wallet: ${account.address}`);
+      console.log(`   Sending ${booking.amount} USDC on Base Sepolia to Provider: ${booking.payment_address}`);
+
+      // The ABI strictly needed for transferring an ERC20 token
+      const erc20TransferAbi = [
+        {
+          name: 'transfer',
+          type: 'function',
+          inputs: [
+            { name: 'recipient', type: 'address' },
+            { name: 'amount', type: 'uint256' },
+          ],
+          outputs: [{ name: '', type: 'bool' }],
+        },
+      ] as const;
+
+      // USDC has 6 decimal places (unlike ETH which has 18)
+      const amountToPay = parseUnits(booking.amount, 6);
+
+      // Execute a smart contract call to the USDC token address
+      const hash = await client.sendTransaction({
+         to: booking.token as `0x${string}`, // The USDC token address
+         data: encodeFunctionData({
+           abi: erc20TransferAbi,
+           functionName: 'transfer',
+           args: [booking.payment_address as `0x${string}`, amountToPay]
+         })
+      });
+
+      console.log(`   Transaction broadcast! Hash: ${hash}`);
+      console.log(`   Waiting for the block to be mined... (this takes ~5-15 seconds)`);
+      
+      
+      // Wait for it to be confirmed by miners
+      const receipt = await client.waitForTransactionReceipt({ hash });
+      console.log(`   Transaction confirmed in block ${receipt.blockNumber} ✓`);
+      
+      // Update our mockTxHash with the real, verifiable hash
+      mockTxHash = receipt.transactionHash;
+
+    } catch (e: any) {
+      console.error("   Blockchain transaction failed. Does the Agent wallet have testnet Base Sepolia ETH (for gas) AND USDC?", e.message);
+      console.log("   Falling back to mock payment hash to continue the demo framework...");
+    }
+  } else {
+    console.log("   No AGENT_PAYMENT_PRIVATE_KEY found. Simulating an instant payment...");
+  }
+
+  console.log("5) Sending confirmation to Provider callback");
   const callbackResp = await fetch(booking.callback_url, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -86,7 +158,7 @@ async function main() {
   const callback = await callbackResp.json();
   console.log("   receipt payload:", callback);
 
-  console.log("5) Verify receipt signature");
+  console.log("6) Verify final receipt signature");
   const receiptOk = await verifyPayload(callback.receipt, callback.signature, sid.verification.public_key);
   if (!receiptOk) throw new Error("Receipt signature invalid");
   console.log("   Receipt signature valid ✓");

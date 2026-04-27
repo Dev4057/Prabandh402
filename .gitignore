@@ -1,6 +1,7 @@
 # Dependencies
 node_modules/
 .env
+sid.local.json
 
 # Build outputs
 dist/

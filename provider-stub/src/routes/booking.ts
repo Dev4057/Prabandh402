@@ -25,10 +25,10 @@ export async function bookingRoutes(app: FastifyInstance) {
     const nonce = "n-" + randomUUID();
     const payload = {
       booking_id: bookingId,
-      network: process.env.PROVIDER_NETWORK || "sepolia",
-      token: process.env.PROVIDER_TOKEN_ADDRESS,
-      amount: "12.50",
-      payment_address: process.env.PROVIDER_PAYMENT_ADDRESS,
+      network: process.env.PROVIDER_NETWORK || "base-sepolia",
+      token: process.env.PROVIDER_TOKEN_ADDRESS || "0x036CbD53842c5426634e7929541eC2318f3dCF7e", // standard USDC on Base Sepolia
+      amount: "0.01", // Demo amount: 1 cent
+      payment_address: process.env.PROVIDER_PAYMENT_ADDRESS || "0x988c50E5ad6371c4306Af520776bF7aC3246984A", // The user's wallet who will receive the funds
       nonce,
       expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 min
       callback_url: `${process.env.PROVIDER_CALLBACK_URL || "http://localhost:4001/payment/confirm"}`,
